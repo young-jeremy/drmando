@@ -1,0 +1,184 @@
+ {% extends 'base.html' %}
+{% load static %}
+{% load crispy_forms_tags %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <!-- Main Profile Info -->
+        <div class="col-md-8">
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">My Profile</h4>
+                    <a href="{% url 'accounts:edit_profile' %}" class="btn btn-light btn-sm">
+                        <i class="fas fa-edit"></i> Edit Profile
+                    </a>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4 text-center mb-4">
+                            <img src="{{ user.profile.avatar.url }}"
+                                 alt="Profile Picture" class="img-fluid rounded-circle mb-3" style="max-width: 150px;">
+                            <h5>{{ user.get_full_name }}</h5>
+                            <p class="text-muted">
+                                {% if user.user_type == 'student' %}
+                                    Student - Grade {{ user.student.grade }}{{ user.student.section }}
+                                {% else %}
+                                    Teacher - {{ user.teacher.get_department_display }}
+                                {% endif %}
+                            </p>
+                        </div>
+                        <div class="col-md-8">
+                            <h5>Personal Information</h5>
+                            <ul class="list-unstyled">
+                                <li><strong>Email:</strong> {{ user.email }}</li>
+                                {% if user.user_type == 'student' %}
+                                    <li><strong>Parent Name:</strong> {{ user.student.parent_name }}</li>
+                                    <li><strong>Parent Phone:</strong> {{ user.student.parent_phone }}</li>
+                                    <li><strong>Parent Email:</strong> {{ user.student.parent_email }}</li>
+                                    <li><strong>Blood Group:</strong> {{ user.student.blood_group }}</li>
+                                {% else %}
+                                    <li><strong>Department:</strong> {{ user.teacher.get_department_display }}</li>
+                                    <li><strong>Qualification:</strong> {{ user.teacher.qualification }}</li>
+                                    <li><strong>Experience:</strong> {{ user.teacher.experience_years }} years</li>
+                                    <li><strong>Specialization:</strong> {{ user.teacher.specialization }}</li>
+                                {% endif %}
+                                <li><strong>Address:</strong> {{ user.address }}</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Academic/Teaching Information -->
+            {% if user.user_type == 'student' %}
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">My Courses</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Course</th>
+                                    <th>Teacher</th>
+                                    <th>Grade</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for enrollment in user.student.enrollments.all %}
+                                <tr>
+                                    <td>{{ enrollment.course.name }}</td>
+                                    <td>{{ enrollment.course.teacher.user.get_full_name }}</td>
+                                    <td>{{ enrollment.grade|default:"N/A" }}</td>
+                                    <td>
+                                        <span class="badge bg-{% if enrollment.is_active %}success{% else %}danger{% endif %}">
+                                            {{ enrollment.is_active|yesno:"Active,Inactive" }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="4" class="text-center">No courses enrolled.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">My Courses</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Course</th>
+                                    <th>Grade</th>
+                                    <th>Students</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for course in user.teacher.courses.all %}
+                                <tr>
+                                    <td>{{ course.name }}</td>
+                                    <td>{{ course.grade }}</td>
+                                    <td>{{ course.enrollments.count }}/{{ course.max_students }}</td>
+                                    <td>
+                                        <span class="badge bg-{% if course.is_active %}success{% else %}danger{% endif %}">
+                                            {{ course.is_active|yesno:"Active,Inactive" }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="4" class="text-center">No courses assigned.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-md-4">
+            <!-- Quick Actions -->
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Quick Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="#" class="btn btn-outline-primary">
+                            <i class="fas fa-key"></i> Change Password
+                        </a>
+                        {% if user.user_type == 'student' %}
+                        <a href="{% url 'school:course-list' %}" class="btn btn-outline-primary">
+                            <i class="fas fa-book"></i> Browse Courses
+                        </a>
+                        {% else %}
+                        <a href="{% url 'school:create_course' %}" class="btn btn-outline-primary">
+                            <i class="fas fa-plus"></i> Create Course
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Statistics -->
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Statistics</h5>
+                </div>
+                <div class="card-body">
+                    {% if user.user_type == 'student' %}
+                    <ul class="list-unstyled">
+                        <li><strong>Average Grade:</strong> {{ user.student.average_grade|default:"N/A" }}</li>
+                        <li><strong>Attendance Rate:</strong> {{ user.student.attendance_rate|default:"N/A" }}%</li>
+                        <li><strong>Assignments Completed:</strong> {{ user.student.completed_assignments_count }}</li>
+                        <li><strong>Total Courses:</strong> {{ user.student.enrollments.count }}</li>
+                    </ul>
+                    {% else %}
+                    <ul class="list-unstyled">
+                        <li><strong>Total Courses:</strong> {{ user.teacher.courses.count }}</li>
+                        <li><strong>Total Students:</strong> {{ user.teacher.total_students }}</li>
+                        <li><strong>Resources Uploaded:</strong> {{ user.teacher.resources.count }}</li>
+                        <li><strong>Average Course Rating:</strong> {{ user.teacher.average_rating|default:"N/A" }}/5</li>
+                    </ul>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

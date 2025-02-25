@@ -1,0 +1,252 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<!-- Navigation Bar -->
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <div class="container">
+        <a class="navbar-brand" href="{% url 'school:home' %}">
+            <img src="{% static 'images/drmando.png' %}" alt="School Logo" height="40" class="d-inline-block align-top">
+            Bishop Dr. Mando School
+        </a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ml-auto">
+                {% if user.is_authenticated %}
+                    {% if user.user_type == 'student' %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'school:course-list' %}">My Courses</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#assignments">Assignments</a>
+                        </li>
+                    {% elif user.user_type == 'teacher' %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'school:course-list' %}">My Classes</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'school:student-list' %}">Students</a>
+                        </li>
+                    {% endif %}
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="{% url 'accounts:profile' %}" id="userDropdown" role="button" data-toggle="dropdown">
+                            {{ user.get_full_name }}
+                        </a>
+                        <div class="dropdown-menu">
+                            <a class="dropdown-item" href="{% url 'accounts:profile' %}">Profile</a>
+                            <div class="dropdown-divider"></div>
+                            <a class="dropdown-item" href="{% url 'accounts:logout' %}">Logout</a>
+                        </div>
+                    </li>
+                {% else %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'accounts:login' %}">Login</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'accounts:register' %}">Register</a>
+                    </li>
+                {% endif %}
+            </ul>
+        </div>
+    </div>
+</nav>
+
+{% if messages %}
+<div class="container mt-3">
+    {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show">
+            {{ message }}
+            <button type="button" class="close" data-dismiss="alert">&times;</button>
+        </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+{% if user.is_authenticated %}
+    <!-- Dashboard Section -->
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-header">
+                        <h4>Welcome, {{ user.get_full_name }}</h4>
+                    </div>
+                    <div class="card-body">
+                        {% if user.user_type == 'student' %}
+                            <h5>Your Courses</h5>
+                            {% if enrolled_courses %}
+                                <div class="list-group">
+                                    {% for enrollment in enrolled_courses %}
+                                        <a href="{% url 'school:course-detail' enrollment.course.id %}" 
+                                           class="list-group-item list-group-item-action">
+                                            {{ enrollment.course.name }}
+                                            <span class="badge badge-primary float-right">
+                                                Grade: {{ enrollment.get_grade_display|default:"N/A" }}
+                                            </span>
+                                        </a>
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                <p>You are not enrolled in any courses yet.</p>
+                            {% endif %}
+                        {% elif user.user_type == 'teacher' %}
+                            <h5>Your Classes</h5>
+                            {% if teaching_courses %}
+                                <div class="list-group">
+                                    {% for course in teaching_courses %}
+                                        <a href="{% url 'school:course-detail' course.id %}" 
+                                           class="list-group-item list-group-item-action">
+                                            {{ course.name }}
+                                            <span class="badge badge-info float-right">
+                                                {{ course.enrollments.count }} students
+                                            </span>
+                                        </a>
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                <p>You are not teaching any courses yet.</p>
+                            {% endif %}
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <!-- Statistics Card -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5>School Statistics</h5>
+                    </div>
+                    <div class="card-body">
+                        <p>Total Students: {{ total_students }}</p>
+                        <p>Total Teachers: {{ total_teachers }}</p>
+                        <p>Total Courses: {{ total_courses }}</p>
+                    </div>
+                </div>
+                
+                <!-- Quick Links Card -->
+                <div class="card">
+                    <div class="card-header">
+                        <h5>Quick Links</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="list-group">
+                            {% if user.user_type == 'student' %}
+                                <a href="#" class="list-group-item list-group-item-action">
+                                    View Attendance
+                                </a>
+                                <a href="#" class="list-group-item list-group-item-action">
+                                    Upcoming Assignments
+                                </a>
+                            {% elif user.user_type == 'teacher' %}
+                                <a href="{% url 'school:student-list' %}" class="list-group-item list-group-item-action">
+                                    Manage Students
+                                </a>
+                                <a href="#" class="list-group-item list-group-item-action">
+                                    Take Attendance
+                                </a>
+                            {% endif %}
+                            <a href="{% url 'accounts:profile' %}" class="list-group-item list-group-item-action">
+                                Edit Profile
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% else %}
+    <!-- Landing Page Content -->
+    <div class="jumbotron text-center bg-light">
+        <h1 class="display-4">Welcome to Dr. Mando International School</h1>
+        <p class="lead">Empowering Students for a Brighter Future</p>
+        <div class="mt-4">
+            <a href="{% url 'accounts:login' %}" class="btn btn-primary btn-lg mx-2">Login</a>
+            <a href="{% url 'accounts:register' %}" class="btn btn-outline-primary btn-lg mx-2">Register</a>
+        </div>
+    </div>
+
+    <!-- Features Section -->
+    <div class="container my-5">
+        <div class="row">
+            <div class="col-md-4 mb-4">
+                <div class="card text-center h-100">
+                    <div class="card-body">
+                        <i class="fas fa-graduation-cap fa-3x mb-3 text-primary"></i>
+                        <h3>Quality Education</h3>
+                        <p>Providing world-class education with modern teaching methods.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-4">
+                <div class="card text-center h-100">
+                    <div class="card-body">
+                        <i class="fas fa-chalkboard-teacher fa-3x mb-3 text-primary"></i>
+                        <h3>Expert Teachers</h3>
+                        <p>Learn from experienced and qualified teaching professionals.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-4">
+                <div class="card text-center h-100">
+                    <div class="card-body">
+                        <i class="fas fa-users fa-3x mb-3 text-primary"></i>
+                        <h3>Student Support</h3>
+                        <p>Comprehensive support system for student development.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endif %}
+
+<!-- Footer -->
+<footer class="bg-dark text-white py-4 mt-5">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-4">
+                <h5>Contact Us</h5>
+                <p><i class="fas fa-envelope"></i> info@drmando.edu</p>
+                <p><i class="fas fa-phone"></i> +1234567890</p>
+                <p><i class="fas fa-map-marker-alt"></i> 123 Education Street</p>
+            </div>
+            <div class="col-md-4">
+                <h5>Quick Links</h5>
+                <ul class="list-unstyled">
+                    <li><a href="#" class="text-white">About Us</a></li>
+                    <li><a href="#" class="text-white">Programs</a></li>
+                    <li><a href="#" class="text-white">Facilities</a></li>
+                    <li><a href="#" class="text-white">Contact</a></li>
+                </ul>
+            </div>
+            <div class="col-md-4">
+                <h5>Follow Us</h5>
+                <div class="social-links">
+                    <a href="#" class="text-white mr-3"><i class="fab fa-facebook-f"></i></a>
+                    <a href="#" class="text-white mr-3"><i class="fab fa-twitter"></i></a>
+                    <a href="#" class="text-white mr-3"><i class="fab fa-instagram"></i></a>
+                    <a href="#" class="text-white"><i class="fab fa-linkedin-in"></i></a>
+                </div>
+            </div>
+        </div>
+        <div class="row mt-3">
+            <div class="col text-center">
+                <p class="mb-0">&copy; 2024 Dr. Mando International School. All rights reserved.</p>
+            </div>
+        </div>
+    </div>
+</footer>
+
+{% block extra_js %}
+<script>
+    // Initialize tooltips
+    $(function () {
+        $('[data-toggle="tooltip"]').tooltip()
+    })
+
+    // Auto-hide alerts
+    $('.alert').delay(5000).fadeOut(500);
+</script>
+{% endblock %}
+{% endblock %}

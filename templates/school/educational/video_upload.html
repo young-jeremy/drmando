@@ -1,0 +1,21 @@
+{% extends 'school/educational/base_education.html' %}
+{% load crispy_forms_tags %}
+
+{% block education_content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title mb-0">Upload Educational Video</h2>
+            </div>
+            <div class="card-body">
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    {{ form|crispy }}
+                    <button type="submit" class="btn btn-primary">Upload Video</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

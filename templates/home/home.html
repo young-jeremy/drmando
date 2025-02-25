@@ -1,0 +1,115 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<!-- Navigation Bar -->
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <div class="container">
+        <a class="navbar-brand" href="{% url 'school:home' %}">Dr. Mando School</a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ml-auto">
+                {% if user.is_authenticated %}
+                    {% if user.user_type == 'student' %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'school:course-list' %}">My Courses</a>
+                        </li>
+                    {% elif user.user_type == 'teacher' %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'school:teacher-list' %}">Teachers</a>
+                        </li>
+                    {% endif %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'accounts:profile' %}">Profile</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'accounts:logout' %}">Logout</a>
+                    </li>
+                {% else %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'accounts:login' %}">Login</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'accounts:register' %}">Register</a>
+                    </li>
+                {% endif %}
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<!-- Hero Section -->
+<div class="jumbotron text-center bg-light">
+    <h1 class="display-4">Welcome to Dr. Mando International School</h1>
+    <p class="lead">Empowering Students for a Brighter Future</p>
+    {% if not user.is_authenticated %}
+        <div class="mt-4">
+            <a href="{% url 'accounts:login' %}" class="btn btn-primary btn-lg mx-2">Login</a>
+            <a href="{% url 'accounts:register' %}" class="btn btn-outline-primary btn-lg mx-2">Register</a>
+        </div>
+    {% endif %}
+</div>
+
+<!-- Features Section -->
+<div class="container my-5">
+    <div class="row">
+        <div class="col-md-4 mb-4">
+            <div class="card text-center h-100">
+                <div class="card-body">
+                    <i class="fas fa-graduation-cap fa-3x mb-3 text-primary"></i>
+                    <h3>Quality Education</h3>
+                    <p>Providing world-class education with modern teaching methods.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-4">
+            <div class="card text-center h-100">
+                <div class="card-body">
+                    <i class="fas fa-chalkboard-teacher fa-3x mb-3 text-primary"></i>
+                    <h3>Expert Teachers</h3>
+                    <p>Learn from experienced and qualified teaching professionals.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-4">
+            <div class="card text-center h-100">
+                <div class="card-body">
+                    <i class="fas fa-users fa-3x mb-3 text-primary"></i>
+                    <h3>Student Support</h3>
+                    <p>Comprehensive support system for student development.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Contact Section -->
+<div class="bg-light py-5">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-12 text-center">
+                <h2>Contact Us</h2>
+                <p class="lead">Get in touch with us for any inquiries</p>
+                <div class="mt-4">
+                    <p><i class="fas fa-envelope"></i> Email: info@drmando.edu</p>
+                    <p><i class="fas fa-phone"></i> Phone: +1234567890</p>
+                    <p><i class="fas fa-map-marker-alt"></i> Address: 123 Education Street, Knowledge City</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Footer -->
+<footer class="bg-dark text-white py-4">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-12 text-center">
+                <p>&copy; 2024 Dr. Mando International School. All rights reserved.</p>
+            </div>
+        </div>
+    </div>
+</footer>
+{% endblock %}

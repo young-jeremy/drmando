@@ -1,0 +1,282 @@
+{% extends 'ministries/base_ministry.html' %}
+{% load static %}
+{% load crispy_forms_tags %}
+
+{% block ministry_content %}
+<div class="row">
+    <div class="col-lg-8">
+        <!-- Video Player Section -->
+        <div class="card mb-4">
+            <div class="card-body p-0">
+                {% if sermon.video_url %}
+                <div class="ratio ratio-16x9">
+                    <iframe src="{{ sermon.video_url }}"
+                            allowfullscreen
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture">
+                    </iframe>
+                </div>
+                {% elif sermon.thumbnail %}
+                <img src="{{ sermon.thumbnail.url }}" class="img-fluid w-100" alt="{{ sermon.title }}">
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Sermon Details -->
+        <div class="card mb-4">
+            <div class="card-body">
+                <h1 class="h3 mb-3">{{ sermon.title }}</h1>
+
+                <div class="d-flex align-items-center mb-3">
+                    {% if sermon.preacher.profile_image %}
+                    <img src="{{ sermon.preacher.profile_image.url }}"
+                         class="rounded-circle me-2"
+                         alt="{{ sermon.preacher.get_full_name }}"
+                         style="width: 40px; height: 40px; object-fit: cover;">
+                    {% endif %}
+                    <div>
+                        <h6 class="mb-0">{{ sermon.preacher.get_full_name }}</h6>
+                        <small class="text-muted">{{ sermon.date_preached|date:"F j, Y" }}</small>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    {% if sermon.series %}
+                    <span class="badge bg-primary me-2">{{ sermon.series.title }}</span>
+                    {% endif %}
+                    <span class="badge bg-secondary">{{ sermon.get_category_display }}</span>
+                </div>
+
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <h6><i class="bi bi-book"></i> Scripture Reference</h6>
+                        <p>{{ sermon.scripture_reference }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6><i class="bi bi-clock"></i> Duration</h6>
+                        <p>{{ sermon.duration }} minutes</p>
+                    </div>
+                </div>
+
+                <h6>Description</h6>
+                <p class="sermon-description">{{ sermon.description|linebreaks }}</p>
+
+                <!-- Action Buttons -->
+                <div class="d-flex gap-2 mb-4">
+                    {% if sermon.audio_file %}
+                    <a href="{{ sermon.audio_file.url }}" class="btn btn-outline-primary">
+                        <i class="bi bi-download"></i> Download Audio
+                    </a>
+                    {% endif %}
+
+                    {% if sermon.notes %}
+                    <a href="{{ sermon.notes.url }}" class="btn btn-outline-primary">
+                        <i class="bi bi-file-text"></i> Download Notes
+                    </a>
+                    {% endif %}
+
+                    <button class="btn btn-outline-primary" id="shareButton">
+                        <i class="bi bi-share"></i> Share
+                    </button>
+
+                    {% if user.is_authenticated %}
+                    <button class="btn {% if is_liked %}btn-primary{% else %}btn-outline-primary{% endif %}"
+                            id="likeButton"
+                            data-sermon-id="{{ sermon.id }}">
+                        <i class="bi bi-heart{% if is_liked %}-fill{% endif %}"></i>
+                        <span id="likesCount">{{ sermon.likes_count }}</span>
+                    </button>
+                    {% endif %}
+                </div>
+
+                <!-- Tags -->
+                {% if sermon.tags.all %}
+                <div class="mb-4">
+                    <h6>Tags</h6>
+                    {% for tag in sermon.tags.all %}
+                    <a href="{% url 'ministries:sermon_list' %}?tag={{ tag.slug }}"
+                       class="badge bg-light text-dark text-decoration-none me-1">
+                        #{{ tag.name }}
+                    </a>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Notes Section -->
+        {% if user.is_authenticated %}
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Your Notes</h5>
+                <button class="btn btn-sm btn-primary" id="addNoteBtn">
+                    <i class="bi bi-plus-lg"></i> Add Note
+                </button>
+            </div>
+            <div class="card-body">
+                <form method="post" action="{% url 'ministries:save_note' sermon.slug %}"
+                      class="mb-4" id="noteForm" style="display: none;">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <textarea class="form-control" name="content" rows="3"
+                                  placeholder="Write your notes here..."></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Save Note</button>
+                </form>
+
+                <div id="notesList">
+                    {% for note in user_notes %}
+                    <div class="border-bottom pb-3 mb-3">
+                        <p>{{ note.content }}</p>
+                        <small class="text-muted">{{ note.timestamp|timesince }} ago</small>
+                    </div>
+                    {% empty %}
+                    <p class="text-muted text-center">No notes yet. Start taking notes!</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Comments Section -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Comments ({{ sermon.comments.count }})</h5>
+            </div>
+            <div class="card-body">
+                {% if user.is_authenticated %}
+                <form method="post" action="{% url 'services:add_comment' sermon.slug %}" class="mb-4">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <textarea class="form-control" name="content" rows="3"
+                                  placeholder="Share your thoughts..."></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Post Comment</button>
+                </form>
+                {% endif %}
+
+                <div id="commentsList">
+                    {% for comment in sermon.comments.all %}
+                    <div class="d-flex mb-4">
+                        {% if comment.user.profile_image %}
+                        <img src="{{ comment.user.profile_image.url }}"
+                             class="rounded-circle me-2"
+                             alt="{{ comment.user.get_full_name }}"
+                             style="width: 40px; height: 40px; object-fit: cover;">
+                        {% endif %}
+                        <div>
+                            <h6 class="mb-1">{{ comment.user.get_full_name }}</h6>
+                            <p class="mb-1">{{ comment.content }}</p>
+                            <small class="text-muted">{{ comment.created_at|timesince }} ago</small>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <p class="text-muted text-center">No comments yet. Be the first to comment!</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="col-lg-4">
+        <!-- Related Sermons -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Related Sermons</h5>
+            </div>
+            <div class="card-body">
+                {% for related in related_sermons %}
+                <div class="d-flex mb-3">
+                    {% if related.thumbnail %}
+                    <img src="{{ related.thumbnail.url }}"
+                         class="me-2"
+                         alt="{{ related.title }}"
+                         style="width: 100px; height: 60px; object-fit: cover;">
+                    {% endif %}
+                    <div>
+                        <h6 class="mb-1">
+                            <a href="{% url 'ministries:sermon_detail' related.slug %}"
+                               class="text-decoration-none">
+                                {{ related.title }}
+                            </a>
+                        </h6>
+                        <small class="text-muted">{{ related.preacher.get_full_name }}</small>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Series Information -->
+        {% if sermon.series %}
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">About This Series</h5>
+            </div>
+            <div class="card-body">
+                <h6>{{ sermon.series.title }}</h6>
+                <p>{{ sermon.series.description }}</p>
+                <a href="{% url 'ministries:sermon_list' %}?series={{ sermon.series.id }}"
+                   class="btn btn-primary btn-sm">
+                    View All Sermons in Series
+                </a>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Toggle Notes Form
+    document.getElementById('addNoteBtn').addEventListener('click', function() {
+        const form = document.getElementById('noteForm');
+        form.style.display = form.style.display === 'none' ? 'block' : 'none';
+    });
+
+    // Like Functionality
+    document.getElementById('likeButton').addEventListener('click', function() {
+        const sermonId = this.dataset.sermonId;
+        fetch(`/ministries/sermons/${sermonId}/like/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}',
+            },
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const button = document.getElementById('likeButton');
+                const icon = button.querySelector('i');
+                const count = document.getElementById('likesCount');
+
+                if (data.liked) {
+                    button.classList.add('btn-primary');
+                    button.classList.remove('btn-outline-primary');
+                    icon.classList.add('bi-heart-fill');
+                    icon.classList.remove('bi-heart');
+                } else {
+                    button.classList.remove('btn-primary');
+                    button.classList.add('btn-outline-primary');
+                    icon.classList.remove('bi-heart-fill');
+                    icon.classList.add('bi-heart');
+                }
+
+                count.textContent = data.likes_count;
+            }
+        });
+    });
+
+    // Share Functionality
+    document.getElementById('shareButton').addEventListener('click', function() {
+        if (navigator.share) {
+            navigator.share({
+                title: '{{ sermon.title }}',
+                text: '{{ sermon.description|truncatewords:30 }}',
+                url: window.location.href
+            });
+        }
+    });
+</script>
+{% endblock %}

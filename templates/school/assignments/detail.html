@@ -1,0 +1,141 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8">
+            <!-- Assignment Details -->
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">{{ assignment.title }}</h4>
+                    {% if user.user_type == 'teacher' and assignment.course.teacher == user.teacher %}
+                    <a href="{% url 'school:assignment-edit' assignment.id %}" class="btn btn-light btn-sm">
+                        <i class="fas fa-edit"></i> Edit
+                    </a>
+                    {% endif %}
+                </div>
+                <div class="card-body">
+                    <h6 class="text-muted">Course: {{ assignment.course.name }}</h6>
+                    <p>{{ assignment.description }}</p>
+                    <hr>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <ul class="list-unstyled">
+                                <li><strong>Due Date:</strong> {{ assignment.due_date|date:"M d, Y" }}</li>
+                                <li><strong>Max Score:</strong> {{ assignment.max_score }}</li>
+                                <li><strong>Status:</strong> 
+                                    <span class="badge bg-{% if assignment.due_date|date:'Y-m-d' < now|date:'Y-m-d' %}danger{% else %}info{% endif %}">
+                                        {{ assignment.due_date|date:'Y-m-d'|date:'Y-m-d'|yesno:"Due,Pending" }}
+                                    </span>
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <ul class="list-unstyled">
+                                <li><strong>Submissions:</strong> {{ assignment.submissions.count }}</li>
+                                <li><strong>Average Score:</strong> {{ assignment.average_score|default:"N/A" }}</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Submissions Section -->
+            {% if user.user_type == 'teacher' %}
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Student Submissions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="list-group">
+                        {% for submission in assignment.submissions.all %}
+                        <div class="list-group-item">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h6 class="mb-1">{{ submission.student.user.get_full_name }}</h6>
+                                <small class="text-muted">
+                                    Submitted: {{ submission.submitted_at|date:"M d, Y" }}
+                                </small>
+                            </div>
+                            <p class="mb-1">Score: {{ submission.score|default:"Not graded" }}</p>
+                            <div class="mt-2">
+                                <a href="{{ submission.file.url }}" class="btn btn-sm btn-info" target="_blank">
+                                    View Submission
+                                </a>
+                                <button class="btn btn-sm btn-primary" data-bs-toggle="modal" 
+                                        data-bs-target="#gradeModal{{ submission.id }}">
+                                    Grade
+                                </button>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <p class="text-muted">No submissions yet.</p>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-md-4">
+            {% if user.user_type == 'student' %}
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Submit Assignment</h5>
+                </div>
+                <div class="card-body">
+                    {% if assignment.is_submitted %}
+                        <div class="alert alert-success">
+                            <h6>Assignment Submitted</h6>
+                            <p>Submitted on: {{ submission.submitted_at|date:"M d, Y" }}</p>
+                            <p>Score: {{ submission.score|default:"Not graded yet" }}</p>
+                        </div>
+                    {% else %}
+                        <form method="post" enctype="multipart/form-data" action="{% url 'school:assignment-submit' assignment.id %}">
+                            {% csrf_token %}
+                            {{ submission_form|crispy }}
+                            <button type="submit" class="btn btn-primary mt-3">Submit Assignment</button>
+                        </form>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Grade Submission Modals -->
+{% if user.user_type == 'teacher' %}
+{% for submission in assignment.submissions.all %}
+<div class="modal fade" id="gradeModal{{ submission.id }}" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Grade Submission</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" action="{% url 'school:grade-submission' submission.id %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="score" class="form-label">Score (Max: {{ assignment.max_score }})</label>
+                        <input type="number" class="form-control" name="score" min="0" 
+                               max="{{ assignment.max_score }}" value="{{ submission.score|default:'' }}">
+                    </div>
+                    <div class="mb-3">
+                        <label for="feedback" class="form-label">Feedback</label>
+                        <textarea class="form-control" name="feedback" rows="3">{{ submission.feedback }}</textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-primary">Save Grade</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endfor %}
+{% endif %}
+{% endblock %}

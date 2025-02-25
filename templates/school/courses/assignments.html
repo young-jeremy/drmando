@@ -1,0 +1,33 @@
+<div class="card mb-4">
+    <div class="card-header bg-primary text-white">
+        <h5 class="mb-0">Assignments</h5>
+    </div>
+    <div class="card-body">
+        <div class="list-group">
+            {% for assignment in assignments %}
+            <div class="list-group-item">
+                <div class="d-flex w-100 justify-content-between">
+                    <h6 class="mb-1">{{ assignment.title }}</h6>
+                    <small class="text-{% if assignment.due_date|date:'Y-m-d' < now|date:'Y-m-d' %}danger{% else %}info{% endif %}">
+                        Due: {{ assignment.due_date|date:"M d, Y" }}
+                    </small>
+                </div>
+                <p class="mb-1">{{ assignment.description|truncatewords:30 }}</p>
+                <small class="text-muted">{{ assignment.course.name }}</small>
+
+                {% if user.user_type == 'student' %}
+                    {% if assignment.id in submitted_assignments %}
+                        <span class="badge bg-success float-end">Submitted</span>
+                    {% else %}
+                        <a href="{% url 'school:assignment-submit' assignment.id %}" class="btn btn-sm btn-primary float-end">
+                            Submit
+                        </a>
+                    {% endif %}
+                {% endif %}
+            </div>
+            {% empty %}
+            <p class="text-muted">No assignments available.</p>
+            {% endfor %}
+        </div>
+    </div>
+</div>

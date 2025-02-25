@@ -1,0 +1,143 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <!-- Main Content -->
+        <div class="col-md-8">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h4>My Dashboard</h4>
+                </div>
+                <div class="card-body">
+                    <h5>Welcome, {{ user.get_full_name }}</h5>
+                    <p class="text-muted">
+                        {% if user.user_type == 'student' %}
+                            Student - Grade {{ user.student.grade }}{{ user.student.section }}
+                        {% else %}
+                            Teacher - {{ user.teacher.get_department_display }}
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+
+            <!-- Courses Section -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5>My Courses</h5>
+                </div>
+                <div class="card-body">
+                    <div class="list-group">
+                        {% for course in courses %}
+                        <a href="{% url 'school:course-detail' course.id %}" class="list-group-item list-group-item-action">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h6 class="mb-1">{{ course.name }}</h6>
+                                <small class="text-muted">Grade {{ course.grade }}</small>
+                            </div>
+                            <p class="mb-1">{{ course.description|truncatewords:20 }}</p>
+                            {% if user.user_type == 'student' %}
+                                <small>Teacher: {{ course.teacher.user.get_full_name }}</small>
+                            {% else %}
+                                <small>Students: {{ course.enrollments.count }}</small>
+                            {% endif %}
+                        </a>
+                        {% empty %}
+                        <p class="text-muted">No courses available.</p>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Assignments Section -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5>Assignments</h5>
+                </div>
+                <div class="card-body">
+                    <div class="list-group">
+                        {% for assignment in assignments %}
+                        <div class="list-group-item">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h6 class="mb-1">{{ assignment.title }}</h6>
+                                <small class="text-{% if assignment.due_date|date:'Y-m-d' < now|date:'Y-m-d' %}danger{% else %}info{% endif %}">
+                                    Due: {{ assignment.due_date|date:"M d, Y" }}
+                                </small>
+                            </div>
+                            <p class="mb-1">{{ assignment.description|truncatewords:30 }}</p>
+                            <small class="text-muted">{{ assignment.course.name }}</small>
+                            
+                            {% if user.user_type == 'student' %}
+                                {% if assignment.id in submitted_assignments %}
+                                    <span class="badge badge-success float-right">Submitted</span>
+                                {% else %}
+                                    <a href="{% url 'school:assignment-submit' assignment.id %}" class="btn btn-sm btn-primary float-right">
+                                        Submit
+                                    </a>
+                                {% endif %}
+                            {% endif %}
+                        </div>
+                        {% empty %}
+                        <p class="text-muted">No assignments available.</p>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-md-4">
+            <!-- Resources Section -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5>Learning Resources</h5>
+                </div>
+                <div class="card-body">
+                    <div class="list-group">
+                        {% for resource in resources %}
+                        <div class="list-group-item">
+                            <h6 class="mb-1">{{ resource.title }}</h6>
+                            <p class="mb-1">{{ resource.description|truncatewords:10 }}</p>
+                            <div class="btn-group btn-group-sm">
+                                <a href="{% url 'school:resource-detail' resource.id %}" class="btn btn-info">
+                                    View
+                                </a>
+                                <a href="{{ resource.file.url }}" class="btn btn-success" target="_blank">
+                                    Download
+                                </a>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <p class="text-muted">No resources available.</p>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            {% if user.user_type == 'teacher' %}
+            <!-- Recent Submissions -->
+            <div class="card">
+                <div class="card-header">
+                    <h5>Recent Submissions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="list-group">
+                        {% for submission in recent_submissions %}
+                        <div class="list-group-item">
+                            <h6 class="mb-1">{{ submission.student.user.get_full_name }}</h6>
+                            <p class="mb-1">{{ submission.assignment.title }}</p>
+                            <small class="text-muted">
+                                Submitted: {{ submission.submitted_at|date:"M d, Y" }}
+                            </small>
+                        </div>
+                        {% empty %}
+                        <p class="text-muted">No recent submissions.</p>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

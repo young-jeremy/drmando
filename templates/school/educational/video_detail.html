@@ -1,0 +1,71 @@
+{% extends 'school/educational/base_education.html' %}
+{% load static %}
+{% block education_content %}
+<div class="row">
+    <div class="col-lg-8">
+        <div class="video-player-container" style="position: relative; padding-top: 56.25%;">
+            <video controls style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;">
+                <source src="{{ video.video_file.url }}" type="video/mp4">
+                Your browser does not support the video tag.
+            </video>
+        </div>
+
+        <div class="video-info mt-3">
+            <h1 class="h3">{{ video.title }}</h1>
+            <div class="d-flex justify-content-between align-items-center my-3">
+                <div class="video-meta">
+                    {{ video.views }} views • {{ video.upload_date|date:"F j, Y" }}
+                </div>
+                <div class="video-actions">
+                    <form method="post" action="{% url 'school:like_video' video.id %}" class="d-inline">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-outline-primary">
+                            <i class="fas fa-thumbs-up"></i> {{ video.likes }}
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="instructor-info">
+                            <h5 class="mb-0">{{ video.instructor }}</h5>
+                            <span class="badge bg-{{ video.difficulty_level|lower }}">
+                                {{ video.get_difficulty_level_display }}
+                            </span>
+                            <span class="badge bg-secondary">{{ video.get_category_display }}</span>
+                        </div>
+                    </div>
+                    <p class="card-text">{{ video.description|linebreaks }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Learning Materials</h5>
+            </div>
+            <div class="card-body">
+                {% if video.study_materials %}
+                <a href="{{ video.study_materials.url }}" class="btn btn-primary btn-block mb-3 w-100">
+                    <i class="fas fa-download"></i> Download Study Materials
+                </a>
+                {% endif %}
+
+                {% if video.worksheet %}
+                <a href="{{ video.worksheet.url }}" class="btn btn-success btn-block w-100">
+                    <i class="fas fa-file-alt"></i> Download Worksheet
+                </a>
+                {% endif %}
+
+                {% if not video.study_materials and not video.worksheet %}
+                <p class="text-muted text-center">No materials available for this video</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

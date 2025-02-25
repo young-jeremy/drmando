@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<div class="card mb-4">
+    <div class="card-header bg-primary text-white">
+        <h5 class="mb-0">Learning Resources</h5>
+    </div>
+    <div class="card-body">
+        <div class="list-group">
+            {% for resource in resources %}
+            <div class="list-group-item">
+                <h6 class="mb-1">{{ resource.title }}</h6>
+                <p class="mb-1">{{ resource.description|truncatewords:10 }}</p>
+                <div class="btn-group btn-group-sm">
+                    <a href="{% url 'school:resource-detail' resource.id %}" class="btn btn-info">
+                        View
+                    </a>
+                    <a href="{{ resource.file.url }}" class="btn btn-success" target="_blank">
+                        Download
+                    </a>
+                </div>
+            </div>
+            {% empty %}
+            <p class="text-muted">No resources available.</p>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

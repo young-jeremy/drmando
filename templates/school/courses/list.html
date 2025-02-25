@@ -1,0 +1,32 @@
+
+{% extends 'base.html' %}
+{% load static
+
+{% block content %}
+
+<div class="card mb-4">
+    <div class="card-header bg-primary text-white">
+        <h5 class="mb-0">My Courses</h5>
+    </div>
+    <div class="card-body">
+        <div class="list-group">
+            {% for course in courses %}
+            <a href="{% url 'school:course-detail' course.id %}" class="list-group-item list-group-item-action">
+                <div class="d-flex w-100 justify-content-between">
+                    <h6 class="mb-1">{{ course.name }}</h6>
+                    <small class="text-muted">Grade {{ course.grade }}</small>
+                </div>
+                <p class="mb-1">{{ course.description|truncatewords:20 }}</p>
+                {% if user.user_type == 'student' %}
+                    <small>Teacher: {{ course.teacher.user.get_full_name }}</small>
+                {% else %}
+                    <small>Students: {{ course.enrollments.count }}</small>
+                {% endif %}
+            </a>
+            {% empty %}
+            <p class="text-muted">No courses available.</p>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

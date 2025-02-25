@@ -1,0 +1,95 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load crispy_forms_tags %}
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">{{ resource.title }}</h4>
+                    {% if user.user_type == 'teacher' and resource.uploaded_by == user.teacher %}
+                    <div>
+                        <a href="{% url 'school:resource-edit' resource.id %}" class="btn btn-light btn-sm">
+                            <i class="fas fa-edit"></i> Edit
+                        </a>
+                        <button class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#deleteModal">
+                            <i class="fas fa-trash"></i> Delete
+                        </button>
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="card-body">
+                    <h6 class="text-muted">Course: {{ resource.course.name }}</h6>
+                    <p>{{ resource.description }}</p>
+                    <hr>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <ul class="list-unstyled">
+                                <li><strong>Uploaded By:</strong> {{ resource.uploaded_by.user.get_full_name }}</li>
+                                <li><strong>Upload Date:</strong> {{ resource.upload_date|date:"M d, Y" }}</li>
+                                <li><strong>File Type:</strong> {{ resource.file.name|last|upper }}</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="d-grid gap-2">
+                                <a href="{{ resource.file.url }}" class="btn btn-success" target="_blank">
+                                    <i class="fas fa-download"></i> Download Resource
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Other Resources</h5>
+                </div>
+                <div class="card-body">
+                    <div class="list-group">
+                        {% for other_resource in related_resources %}
+                        {% if other_resource != resource %}
+                        <a href="{% url 'school:resource-detail' other_resource.id %}" class="list-group-item list-group-item-action">
+                            <h6 class="mb-1">{{ other_resource.title }}</h6>
+                            <small class="text-muted">{{ other_resource.upload_date|date:"M d, Y" }}</small>
+                        </a>
+                        {% endif %}
+                        {% empty %}
+                        <p class="text-muted">No other resources available.</p>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Modal -->
+{% if user.user_type == 'teacher' and resource.uploaded_by == user.teacher %}
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Delete Resource</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete this resource?</p>
+                <p class="text-danger"><strong>This action cannot be undone.</strong></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form method="post" action="{% url 'school:resource-delete' resource.id %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">Delete Resource</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

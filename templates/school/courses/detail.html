@@ -1,0 +1,145 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <!-- Main Course Info -->
+        <div class="col-md-8">
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">{{ course.name }}</h4>
+                    {% if user.user_type == 'teacher' and course.teacher == user.teacher %}
+                    <a href="{% url 'school:course-edit' course.id %}" class="btn btn-light btn-sm">
+                        <i class="fas fa-edit"></i> Edit
+                    </a>
+                    {% endif %}
+                </div>
+                <div class="card-body">
+                    <h6 class="text-muted">Course Code: {{ course.code }}</h6>
+                    <p>{{ course.description }}</p>
+                    <hr>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h5>Course Details</h5>
+                            <ul class="list-unstyled">
+                                <li><strong>Grade:</strong> {{ course.grade }}</li>
+                                <li><strong>Teacher:</strong> {{ course.teacher.user.get_full_name }}</li>
+                                <li><strong>Students:</strong> {{ course.enrollments.count }}/{{ course.max_students }}</li>
+                                <li><strong>Status:</strong> 
+                                    <span class="badge bg-{% if course.is_active %}success{% else %}danger{% endif %}">
+                                        {{ course.is_active|yesno:"Active,Inactive" }}
+                                    </span>
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h5>Quick Stats</h5>
+                            <ul class="list-unstyled">
+                                <li><strong>Assignments:</strong> {{ course.assignments.count }}</li>
+                                <li><strong>Resources:</strong> {{ course.resources.count }}</li>
+                                <li><strong>Average Grade:</strong> {{ course.average_grade|default:"N/A" }}</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Assignments Section -->
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Assignments</h5>
+                    {% if user.user_type == 'teacher' and course.teacher == user.teacher %}
+                    <a href="{% url 'school:assignment-create' %}?course={{ course.id }}" class="btn btn-light btn-sm">
+                        <i class="fas fa-plus"></i> Add Assignment
+                    </a>
+                    {% endif %}
+                </div>
+                <div class="card-body">
+                    <div class="list-group">
+                        {% for assignment in course.assignments.all %}
+                        <div class="list-group-item">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h6 class="mb-1">{{ assignment.title }}</h6>
+                                <small class="text-{% if assignment.due_date|date:'Y-m-d' < now|date:'Y-m-d' %}danger{% else %}info{% endif %}">
+                                    Due: {{ assignment.due_date|date:"M d, Y" }}
+                                </small>
+                            </div>
+                            <p class="mb-1">{{ assignment.description|truncatewords:30 }}</p>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <small class="text-muted">Max Score: {{ assignment.max_score }}</small>
+                                {% if user.user_type == 'student' %}
+                                    {% if assignment.id in submitted_assignments %}
+                                        <span class="badge bg-success">Submitted</span>
+                                    {% else %}
+                                        <a href="{% url 'school:assignment-submit' assignment.id %}" class="btn btn-sm btn-primary">
+                                            Submit
+                                        </a>
+                                    {% endif %}
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% empty %}
+                        <p class="text-muted">No assignments available.</p>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-md-4">
+            <!-- Students List -->
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Enrolled Students</h5>
+                </div>
+                <div class="card-body">
+                    <div class="list-group">
+                        {% for enrollment in course.enrollments.all %}
+                        <div class="list-group-item">
+                            <h6 class="mb-1">{{ enrollment.student.user.get_full_name }}</h6>
+                            <small class="text-muted">Grade: {{ enrollment.grade|default:"N/A" }}</small>
+                        </div>
+                        {% empty %}
+                        <p class="text-muted">No students enrolled.</p>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Resources Section -->
+            <div class="card">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Resources</h5>
+                    {% if user.user_type == 'teacher' and course.teacher == user.teacher %}
+                    <a href="{% url 'school:resource-create' %}?course={{ course.id }}" class="btn btn-light btn-sm">
+                        <i class="fas fa-plus"></i> Add Resource
+                    </a>
+                    {% endif %}
+                </div>
+                <div class="card-body">
+                    <div class="list-group">
+                        {% for resource in course.resources.all %}
+                        <div class="list-group-item">
+                            <h6 class="mb-1">{{ resource.title }}</h6>
+                            <p class="mb-1">{{ resource.description|truncatewords:10 }}</p>
+                            <div class="btn-group btn-group-sm">
+                                <a href="{% url 'school:resource-detail' resource.id %}" class="btn btn-info">
+                                    View
+                                </a>
+                                <a href="{{ resource.file.url }}" class="btn btn-success" target="_blank">
+                                    Download
+                                </a>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <p class="text-muted">No resources available.</p>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

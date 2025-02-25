@@ -1,0 +1,215 @@
+{% extends 'base_dashboard.html' %}
+{% load static %}
+
+{% block content %}
+    <div class="resources-container">
+        <div class="resources-header">
+            <h1>Sermon Resources</h1>
+            <p>Access sermon recordings, slides, and other materials</p>
+        </div>
+
+        <div class="resources-grid">
+            {% for sermon in sermon_resources %}
+                <div class="resource-card">
+                    <div class="resource-header">
+                        <h3>{{ sermon.title }}</h3>
+                        <span class="category-badge">{{ sermon.get_category_display }}</span>
+                    </div>
+
+                    <div class="resource-meta">
+                        <p><i class="fas fa-user-tie"></i> {{ sermon.preacher }}</p>
+                        <p><i class="fas fa-calendar"></i> {{ sermon.date_preached|date:"F j, Y" }}</p>
+                    </div>
+
+                    <div class="resource-actions">
+                        {% if sermon.audio_recording %}
+                            <div class="audio-section">
+                                <h4>Audio Recording</h4>
+                                <audio controls class="audio-player">
+                                    <source src="{{ sermon.audio_recording.url }}" type="audio/mpeg">
+                                    Your browser does not support the audio element.
+                                </audio>
+                                <a href="{{ sermon.audio_recording.url }}" class="btn btn-sm btn-primary" download>
+                                    <i class="fas fa-download"></i> Download Audio
+                                </a>
+                            </div>
+                        {% endif %}
+
+                        {% if sermon.slides %}
+                            <div class="slides-section">
+                                <h4>Presentation Slides</h4>
+                                <a href="{{ sermon.slides.url }}" class="btn btn-primary" download>
+                                    <i class="fas fa-file-powerpoint"></i> Download Slides
+                                </a>
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <a href="{% url 'resources:sermon_detail' sermon.pk %}" class="btn btn-outline-secondary btn-sm">
+                        <i class="fas fa-eye"></i> View Full Sermon Notes
+                    </a>
+                </div>
+            {% empty %}
+                <div class="no-resources">
+                    <p>No sermon resources available at the moment.</p>
+                </div>
+            {% endfor %}
+        </div>
+
+        {% if is_paginated %}
+            <nav class="pagination-container">
+                <ul class="pagination">
+                    {% if page_obj.has_previous %}
+                        <li>
+                            <a href="?page={{ page_obj.previous_page_number }}"
+                               class="btn btn-outline-primary">Previous</a>
+                        </li>
+                    {% endif %}
+
+                    {% for num in page_obj.paginator.page_range %}
+                        <li>
+                            <a href="?page={{ num }}"
+                               class="btn {% if page_obj.number == num %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                                {{ num }}
+                            </a>
+                        </li>
+                    {% endfor %}
+
+                    {% if page_obj.has_next %}
+                        <li>
+                            <a href="?page={{ page_obj.next_page_number }}" class="btn btn-outline-primary">Next</a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        {% endif %}
+    </div>
+{% endblock %}
+
+{% block extra_css %}
+    <style>
+        .resources-container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+
+        .resources-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .resources-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .resource-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .resource-header {
+            margin-bottom: 1rem;
+        }
+
+        .resource-header h3 {
+            margin: 0 0 0.5rem 0;
+            font-size: 1.2rem;
+        }
+
+        .category-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            background: #007bff;
+            color: white;
+            border-radius: 20px;
+            font-size: 0.8rem;
+        }
+
+        .resource-meta {
+            color: #666;
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+        }
+
+        .resource-meta p {
+            margin: 0.25rem 0;
+        }
+
+        .resource-meta i {
+            width: 20px;
+            margin-right: 0.5rem;
+        }
+
+        .resource-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .audio-section, .slides-section {
+            background: #f8f9fa;
+            padding: 1rem;
+            border-radius: 4px;
+        }
+
+        .audio-player {
+            width: 100%;
+            margin: 0.5rem 0;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-sm {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.875rem;
+        }
+
+        .btn-primary {
+            background: #007bff;
+            color: white;
+            border: none;
+        }
+
+        .btn-outline-secondary {
+            background: white;
+            color: #6c757d;
+            border: 1px solid #6c757d;
+        }
+
+        .pagination-container {
+            margin-top: 2rem;
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            gap: 0.5rem;
+            list-style: none;
+            padding: 0;
+        }
+
+        .no-resources {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 2rem;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+    </style>
+{% endblock %}

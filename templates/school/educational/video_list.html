@@ -1,0 +1,387 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card bg-light">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h2 class="mb-1">Educational Videos Library</h2>
+                            <p class="text-muted mb-0">Explore our collection of Educational Content</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search and Filter Section -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <form method="get" class="d-flex gap-2">
+                <div class="input-group">
+                    <input type="text" name="search" class="form-control"
+                           placeholder="Search Videos..."
+                           value="{{ search_query|default:'' }}">
+                    {% if category %}
+                    <input type="hidden" name="category" value="{{ category }}">
+                    {% endif %}
+                    <button class="btn btn-outline-primary" type="submit">
+                        <i class="bi bi-search"></i> Search
+                    </button>
+                </div>
+            </form>
+        </div>
+        <div class="col-md-4">
+            <form method="get" id="categoryForm">
+                {% if search_query %}
+                <input type="hidden" name="search" value="{{ search_query }}">
+                {% endif %}
+                <select class="form-select" name="category" onchange="this.form.submit()">
+                    <option value="">All Categories</option>
+                    {% for cat_code, cat_name in categories %}
+                    <option value="{{ cat_code }}" {% if category == cat_code %}selected{% endif %}>
+                        {{ cat_name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </form>
+        </div>
+    </div>
+
+    <!-- Featured Videos -->
+    {% if featured_videos %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <h3 class="mb-3">Featured Videos</h3>
+            <div class="row g-4">
+                {% for video in featured_videos %}
+                <div class="col-md-6 col-lg-4">
+                    <div class="card h-100">
+                        {% if video.thumbnail %}
+                            <img src="{{ video.thumbnail.url }}"
+                                 class="card-img-top"
+                                 alt="{{ video.title }}"
+                                 style="height: 200px; object-fit: cover;">
+                        {% else %}
+                            <img src="{% static 'education/default-thumbnail.jpg' %}"
+                                 class="card-img-top"
+                                 alt="{{ video.title }}"
+                                 style="height: 200px; object-fit: cover;">
+                        {% endif %}
+                        <div class="card-body">
+                            <h5 class="card-title">{{ video.title }}</h5>
+                            <div class="text-muted mb-2">
+                                <div><i class="bi bi-person-fill"></i> {{ video.instructor }}</div>
+                                <div><i class="bi bi-mortarboard-fill"></i> {{ video.get_grade_level_display }}</div>
+                                <div><i class="bi bi-calendar-event"></i> {{ video.upload_date|date:"F j, Y" }}</div>
+                            </div>
+                            <p class="card-text">{{ video.description|truncatewords:30 }}</p>
+                        </div>
+                        <div class="card-footer bg-transparent">
+                            <a href="{% url 'education:video_detail' video.id %}"
+                               class="btn btn-primary btn-sm w-100">
+                                Watch Video
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Recent Videos -->
+    <div class="row">
+        <div class="col-12">
+            <h3 class="mb-3">Recent Videos</h3>
+            <div class="row g-4">
+                {% for video in page_obj %}
+                <div class="col-md-6 col-lg-3">
+                    <div class="card h-100">
+                        {% if video.thumbnail %}
+                            <img src="{{ video.thumbnail.url }}"
+                                 class="card-img-top"
+                                 alt="{{ video.title }}"
+                                 style="height: 160px; object-fit: cover;">
+                        {% else %}
+                            <img src="{% static 'education/default-thumbnail.jpg' %}"
+                                 class="card-img-top"
+                                 alt="{{ video.title }}"
+                                 style="height: 160px; object-fit: cover;">
+                        {% endif %}
+                        <div class="card-body">
+                            <h5 class="card-title text-truncate">{{ video.title }}</h5>
+                            <div class="text-muted small mb-2">
+                                <div><i class="bi bi-person"></i> {{ video.instructor }}</div>
+                                <div><i class="bi bi-mortarboard"></i> {{ video.get_grade_level_display }}</div>
+                                <div><i class="bi bi-tag"></i> {{ video.get_category_display }}</div>
+                                <div><i class="bi bi-calendar"></i> {{ video.upload_date|date:"M d, Y" }}</div>
+                                <div><i class="bi bi-eye"></i> {{ video.views }} views</div>
+                                <div>
+                                    <span class="badge bg-{{ video.difficulty_level|lower }}">
+                                        {{ video.get_difficulty_level_display }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-footer bg-transparent">
+                            <a href="{% url 'school:video_detail' video.id %}"
+                               class="btn btn-outline-primary btn-sm w-100">
+                                Watch Video
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Pagination -->
+            {% if page_obj.has_other_pages %}
+            <nav class="mt-4">
+                <ul class="pagination justify-content-center">
+                    {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if category %}&category={{ category }}{% endif %}">
+                            Previous
+                        </a>
+                    </li>
+                    {% endif %}
+
+                    {% for num in page_obj.paginator.page_range %}
+                    <li class="page-item {% if page_obj.number == num %}active{% endif %}">
+                        <a class="page-link" href="?page={{ num }}{% if search_query %}&search={{ search_query }}{% endif %}{% if category %}&category={{ category }}{% endif %}">
+                            {{ num }}
+                        </a>
+                    </li>
+                    {% endfor %}
+
+                    {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if category %}&category={{ category }}{% endif %}">
+                            Next
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Search Results Message -->
+    {% if search_query %}
+    <div class="alert alert-info">
+        Found {{ total_results }} result{{ total_results|pluralize }} for "{{ search_query }}"
+        {% if category %}
+        in category "{{ category_display }}"
+        {% endif %}
+        <a href="{% url 'education:video_list' %}" class="float-end">Clear Search</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Get form elements
+    const searchForm = document.querySelector('.search-form');
+    const categoryForm = document.getElementById('categoryForm');
+    const searchInput = searchForm.querySelector('input[name="search"]');
+    const categorySelect = categoryForm.querySelector('select[name="category"]');
+    const gradeSelect = document.querySelector('select[name="grade"]');
+
+    // Function to update URL parameters without page reload
+    function updateURLParameter(url, param, value) {
+        var newAdditionalURL = "";
+        var tempArray = url.split("?");
+        var baseURL = tempArray[0];
+        var additionalURL = tempArray[1];
+        var temp = "";
+        if (additionalURL) {
+            tempArray = additionalURL.split("&");
+            for (let i = 0; i < tempArray.length; i++) {
+                if (tempArray[i].split('=')[0] != param) {
+                    newAdditionalURL += temp + tempArray[i];
+                    temp = "&";
+                }
+            }
+        }
+        var rows_txt = temp + "" + param + "=" + value;
+        return baseURL + "?" + newAdditionalURL + rows_txt;
+    }
+
+    // Function to handle search with delay (debounce)
+    let searchTimeout;
+    searchInput.addEventListener('input', function(e) {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+            searchForm.submit();
+        }, 500); // Wait 500ms after user stops typing
+    });
+
+    // Handle category change
+    categorySelect.addEventListener('change', function(e) {
+        const searchQuery = searchInput.value;
+        let url = `?category=${e.target.value}`;
+        if (searchQuery) {
+            url += `&search=${searchQuery}`;
+        }
+        if (gradeSelect && gradeSelect.value) {
+            url += `&grade=${gradeSelect.value}`;
+        }
+        window.location.href = url;
+    });
+
+    // Handle grade change if grade select exists
+    if (gradeSelect) {
+        gradeSelect.addEventListener('change', function(e) {
+            const searchQuery = searchInput.value;
+            const category = categorySelect.value;
+            let url = `?grade=${e.target.value}`;
+            if (searchQuery) {
+                url += `&search=${searchQuery}`;
+            }
+            if (category) {
+                url += `&category=${category}`;
+            }
+            window.location.href = url;
+        });
+    }
+
+    // Clear all filters
+    const clearFilters = document.querySelector('.clear-filters');
+    if (clearFilters) {
+        clearFilters.addEventListener('click', function(e) {
+            e.preventDefault();
+            window.location.href = window.location.pathname;
+        });
+    }
+
+    // Handle sort options if they exist
+    const sortSelect = document.querySelector('select[name="sort"]');
+    if (sortSelect) {
+        sortSelect.addEventListener('change', function(e) {
+            const currentUrl = window.location.href;
+            const newUrl = updateURLParameter(currentUrl, 'sort', e.target.value);
+            window.location.href = newUrl;
+        });
+    }
+
+    // Add active class to current filter pills
+    const filterPills = document.querySelectorAll('.filter-pill');
+    filterPills.forEach(pill => {
+        pill.addEventListener('click', function(e) {
+            filterPills.forEach(p => p.classList.remove('active'));
+            this.classList.add('active');
+        });
+    });
+
+    // Optional: Add smooth scrolling for filter pills
+    const pillsContainer = document.querySelector('.filter-pills-scroll');
+    if (pillsContainer) {
+        let isDown = false;
+        let startX;
+        let scrollLeft;
+
+        pillsContainer.addEventListener('mousedown', (e) => {
+            isDown = true;
+            pillsContainer.classList.add('active');
+            startX = e.pageX - pillsContainer.offsetLeft;
+            scrollLeft = pillsContainer.scrollLeft;
+        });
+
+        pillsContainer.addEventListener('mouseleave', () => {
+            isDown = false;
+            pillsContainer.classList.remove('active');
+        });
+
+        pillsContainer.addEventListener('mouseup', () => {
+            isDown = false;
+            pillsContainer.classList.remove('active');
+        });
+
+        pillsContainer.addEventListener('mousemove', (e) => {
+            if (!isDown) return;
+            e.preventDefault();
+            const x = e.pageX - pillsContainer.offsetLeft;
+            const walk = (x - startX) * 2;
+            pillsContainer.scrollLeft = scrollLeft - walk;
+        });
+    }
+});
+</script>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* ... existing styles ... */
+
+    /* Enhanced Filter Pills Scrolling */
+    .filter-pills-scroll {
+        cursor: grab;
+        user-select: none;
+    }
+
+    .filter-pills-scroll.active {
+        cursor: grabbing;
+        cursor: -webkit-grabbing;
+    }
+
+    /* Smooth transitions */
+    .filter-pill {
+        transition: all 0.3s ease;
+    }
+
+    /* Loading state */
+    .loading {
+        opacity: 0.7;
+        pointer-events: none;
+    }
+
+    /* Sort dropdown styling */
+    .sort-select {
+        min-width: 200px;
+        border-radius: 20px;
+        padding: 8px 16px;
+        border: 1px solid #dee2e6;
+        background-color: white;
+    }
+
+    /* Enhanced search input */
+    .search-input {
+        position: relative;
+    }
+
+    .search-input input {
+        padding-right: 40px;
+        border-radius: 20px;
+        border: 1px solid #dee2e6;
+        transition: border-color 0.3s ease;
+    }
+
+    .search-input input:focus {
+        border-color: #007bff;
+        box-shadow: 0 0 0 0.2rem rgba(0,123,255,.25);
+    }
+
+    /* Clear button */
+    .clear-filters {
+        text-decoration: none;
+        color: #6c757d;
+        font-size: 0.9rem;
+        transition: color 0.3s ease;
+    }
+
+    .clear-filters:hover {
+        color: #dc3545;
+    }
+</style>
+{% endblock %}
