@@ -1,4 +1,3 @@
-from accounts.models import User
 from django.conf import settings
 from django.core.validators import FileExtensionValidator
 from django.db import models
@@ -100,36 +99,26 @@ class EducationalVideo(models.Model):
 
 
 class Course(models.Model):
+    assignments = models.ManyToManyField('school.Assignment', blank=True, related_name='courses')
     title = models.CharField(max_length=200, null=True, blank=True)
     description = models.TextField(null=True, blank=True)
-    instructor = models.ForeignKey(User, on_delete=models.CASCADE, null=True)
-    grade_level = models.CharField(max_length=100, choices=EducationalVideo.GRADE_CHOICES, default='BEGINNER')
-    subject = models.CharField(
-        max_length=10,
-        choices=EducationalVideo.CATEGORY_CHOICES,
-        default='OTHER'
-    )
-    thumbnail = models.ImageField(
-        upload_to='course_thumbnails/',
-        blank=True,
-        null=True
-    )
-    syllabus_file = models.FileField(
-        upload_to='course_syllabi/',
-        blank=True,
-        null=True
-    )
+    instructor = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, null=True, blank=True)
+    grade_level = models.CharField(max_length=3, null=True, blank=True)
+    subject = models.CharField(max_length=10, null=True, blank=True)
+    thumbnail = models.ImageField(upload_to='course_thumbnails/', blank=True, null=True)
+    syllabus_file = models.FileField(upload_to='course_syllabi/', blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     is_active = models.BooleanField(default=True)
+    max_students = models.PositiveIntegerField(default=30)
+
+    students = models.ManyToManyField('school.Student', blank=True, related_name='courses', through='school.Enrollment', through_fields=('course', 'student'))
 
     class Meta:
         ordering = ['-created_at']
 
     def __str__(self):
         return self.title
-
-
 
 
 class SermonNote(models.Model):
@@ -164,7 +153,7 @@ class SermonNote(models.Model):
     presentation_file = models.FileField(upload_to='sermon_presentations/', blank=True)
 
     # Metadata
-    created_by = models.ForeignKey(User, on_delete=models.CASCADE)
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     is_published = models.BooleanField(default=False)
@@ -334,7 +323,7 @@ class Subject(models.Model):
         return f"{self.name} - {self.get_grade_level_display()}"
 
 class Student(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     admission_date = models.DateField(auto_now_add=True)
     BLOOD_GROUP_CHOICES = [
         ('A+', 'A+'), ('A-', 'A-'),
@@ -377,7 +366,7 @@ class Student(models.Model):
 
 
 class Teacher(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     joining_date = models.DateField(auto_now_add=True)
     courses = models.ManyToManyField(Course, blank=True)
     DEPARTMENT_CHOICES = [
@@ -436,20 +425,46 @@ class Attendance(models.Model):
         return f"{self.student} - {self.course} - {self.date} ({status})"
 
 
+
 class Assignment(models.Model):
-    course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='assignments')
-    title = models.CharField(max_length=200)
-    description = models.TextField()
+    PRIORITY_CHOICES = [
+        ('LOW', 'Low'),
+        ('MEDIUM', 'Medium'),
+        ('HIGH', 'High')
+    ]
+
+    title = models.CharField(max_length=200, blank=True, null=True)
+    course = models.ForeignKey('Course', on_delete=models.CASCADE, related_name='course_assignments', null=True, blank=True)
+    description = models.TextField(blank=True, null=True)
     due_date = models.DateTimeField()
-    max_score = models.PositiveIntegerField(default=100)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    teacher = models.ForeignKey('Teacher', on_delete=models.CASCADE, related_name='created_assignments', null=True, blank=True)
+    subject = models.ForeignKey('Subject', on_delete=models.CASCADE, related_name='assignments', null=True, blank=True)
+    students = models.ManyToManyField(
+        Student,
+        related_name='assignments',
+        blank=True
+    )
+    grade_level = models.CharField(
+        max_length=3,
+        choices=EducationalVideo.GRADE_CHOICES,
+        help_text="Grade level for this assignment"
+    )
+    priority = models.CharField(max_length=6, choices=PRIORITY_CHOICES, default='MEDIUM')
+    file_attachment = models.FileField(upload_to='assignments/', blank=True, null=True)
+    is_active = models.BooleanField(default=True)
+    max_score = models.PositiveIntegerField(default=100)
 
     class Meta:
         ordering = ['-due_date']
 
     def __str__(self):
-        return f"{self.course} - {self.title}"
+        return self.title if self.title else "Untitled Assignment"
+
+    def get_absolute_url(self):
+        return reverse('school:assignment-detail', kwargs={'pk': self.pk})
+
 
 
 class AssignmentSubmission(models.Model):

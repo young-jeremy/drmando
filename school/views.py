@@ -61,7 +61,69 @@ from django.contrib import messages
 from django.urls import reverse
 from .models import Subject
 from .forms import SubjectForm
+from django.shortcuts import render
+from django.contrib.auth.decorators import login_required
+from django.db.models import Q
+from django.core.paginator import Paginator
+from .models import Assignment
 
+
+@login_required
+def course_enroll(request, pk):
+    if request.method == 'POST':
+        course = get_object_or_404(Course, pk=pk)
+        if not hasattr(request.user, 'student'):
+            messages.error(request, "Only students can enroll in courses.")
+            return redirect('school:course-detail', pk=pk)
+
+        if course.students.count() >= course.max_students:
+            messages.error(request, "This course is full.")
+            return redirect('school:course_detail', pk=pk)
+
+        if request.user.student in course.students.all():
+            messages.warning(request, "You are already enrolled in this course.")
+        else:
+            course.students.add(request.user.student)
+            messages.success(request, f"Successfully enrolled in {course.title}.")
+
+    return redirect('school:course_detail', pk=pk)
+
+
+@login_required
+def course_unenroll(request, pk):
+    if request.method == 'POST':
+        course = get_object_or_404(Course, pk=pk)
+        if not hasattr(request.user, 'student'):
+            messages.error(request, "Only students can unenroll from courses.")
+            return redirect('school:course_detail', pk=pk)
+
+        if request.user.student in course.students.all():
+            course.students.remove(request.user.student)
+            messages.success(request, f"Successfully unenrolled from {course.name}.")
+        else:
+            messages.warning(request, "You are not enrolled in this course.")
+
+    return redirect('school:course_detail', pk=pk)
+
+
+@login_required
+def course_remove_student(request, course_pk, student_pk):
+    if request.method == 'POST':
+        course = get_object_or_404(Course, pk=course_pk)
+        student = get_object_or_404(Student, pk=student_pk)
+
+        if not (request.user.is_staff or
+                (hasattr(request.user, 'teacher') and request.user.teacher == course.teacher)):
+            messages.error(request, "You don't have permission to remove students.")
+            return redirect('school:course_detail', pk=course_pk)
+
+        if student in course.students.all():
+            course.students.remove(student)
+            messages.success(request, f"Successfully removed student from {course.name}.")
+        else:
+            messages.warning(request, "This student is not enrolled in this course.")
+
+    return redirect('school:course_detail', pk=course_pk)
 
 @login_required
 def subject_edit(request, pk):
@@ -113,7 +175,7 @@ def subject_edit(request, pk):
         'can_delete': request.user.is_staff,  # Only staff can delete subjects
     }
 
-    return render(request, 'school/subject_edit.html', context)
+    return render(request, 'school/subjects/subject_edit.html', context)
 
 
 @login_required
@@ -175,7 +237,7 @@ def subject_create(request):
     else:
         form = SubjectForm()
 
-    return render(request, 'school/subject_create.html', {
+    return render(request, 'school/subjects/subject_create.html', {
         'form': form,
         'title': 'Create New Subject'
     })
@@ -220,7 +282,7 @@ def subject_delete(request, pk):
         messages.success(request, 'Subject deleted successfully!')
         return redirect('school:subject-list')
 
-    return render(request, 'school/subject_delete.html', {
+    return render(request, 'school/subjects/subject_delete.html', {
         'subject': subject
     })
 
@@ -248,7 +310,7 @@ def subject_toggle_status(request, pk):
 def create_course(request):
     if not (request.user.is_staff or hasattr(request.user, 'teacher')):
         messages.error(request, "You don't have permission to create courses.")
-        return redirect('home')
+        return redirect('school:home')
 
     if request.method == 'POST':
         form = CourseForm(request.POST, request.FILES)

@@ -11,7 +11,7 @@
     <div class="card-body">
         <div class="list-group">
             {% for course in courses %}
-            <a href="{% url 'school:course-detail' course.id %}" class="list-group-item list-group-item-action">
+            <a href="{% url 'school:course_detail' course.id %}" class="list-group-item list-group-item-action">
                 <div class="d-flex w-100 justify-content-between">
                     <h6 class="mb-1">{{ course.name }}</h6>
                     <small class="text-muted">Grade {{ course.grade }}</small>

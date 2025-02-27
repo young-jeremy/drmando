@@ -59,3 +59,5 @@ class CustomUserAdmin(UserAdmin):
             'fields': ('phone_number', 'email', 'admission_number', 'password1', 'password2', 'user_type'),
         }),
     )
+
+

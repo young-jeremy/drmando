@@ -83,7 +83,7 @@ class User(AbstractUser):
 class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     bio = models.TextField(max_length=500, blank=True)
-    avatar = models.ImageField(upload_to='profile_avatars/', blank=True, null=True)
+    avatar = models.ImageField(upload_to='profile_avatars/', default='static/profile_avatars/default.avif', null=True, blank=True)
     phone_number = models.CharField(max_length=15, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -91,11 +91,32 @@ class Profile(models.Model):
     def __str__(self):
         return f"{self.user.username}'s Profile"
 
-# Signal to create/update user profile when user is created/updated
+    class Profile(models.Model):
+        user = models.OneToOneField(User, on_delete=models.CASCADE)
+        bio = models.TextField(max_length=500, blank=True)
+        avatar = models.ImageField(
+            upload_to='profile_avatars/',
+            null=True,
+            blank=True,
+        )
+
+        @property
+        def get_avatar_url(self):
+            if self.avatar and hasattr(self.avatar, 'url'):
+                return self.avatar.url
+            return '/static/images/default.png'
+
 @receiver(post_save, sender=User)
-def create_or_update_user_profile(sender, instance, created, **kwargs):
+def create_user_profile(sender, instance, created, **kwargs):
     if created:
         Profile.objects.create(user=instance)
-    else:
+
+
+@receiver(post_save, sender=User)
+def save_user_profile(sender, instance, **kwargs):
+    try:
         instance.profile.save()
+    except Profile.DoesNotExist:
+        Profile.objects.create(user=instance)
+
 

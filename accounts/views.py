@@ -1,8 +1,8 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from django.views.generic import CreateView, UpdateView
+from django.views.generic import CreateView, UpdateView, DetailView
 from django.urls import reverse_lazy
 from .forms import UserRegistrationForm, CustomAuthenticationForm
 from .models import User
@@ -44,19 +44,25 @@ def profile_edit(request):
 
 
 
-
-class ProfileView(LoginRequiredMixin, TemplateView):
+class ProfileView(LoginRequiredMixin, DetailView):
+    model = Profile
     template_name = 'accounts/profile.html'
+    context_object_name = 'profile'
+
+    def get_object(self):
+        return get_object_or_404(Profile, user=self.request.user)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        user = self.request.user
-        if user.user_type == 'student':
-            context['enrollments'] = user.student.enrollments.all()
-        else:
-            context['courses'] = user.teacher.courses.all()
-        return context
+        context['is_student'] = hasattr(self.request.user, 'student')
+        context['is_teacher'] = hasattr(self.request.user, 'teacher')
 
+        if context['is_student']:
+            context['student'] = self.request.user.student
+        elif context['is_teacher']:
+            context['teacher'] = self.request.user.teacher
+
+        return context
 
 class DashboardView(LoginRequiredMixin, TemplateView):
     template_name = 'accounts/dashboard.html'
@@ -81,7 +87,7 @@ class DashboardView(LoginRequiredMixin, TemplateView):
 
             # Get resources for enrolled courses
             context['resources'] = Resource.objects.filter(
-                Q(subject__course__in=courses) & Q(is_active=True)
+                Q(subject__in=courses) & Q(is_active=True)
             ).order_by('-upload_date')
 
             context['enrollments'] = enrollments
@@ -147,4 +153,15 @@ def logout_view(request):
 
 @login_required
 def profile_view(request):
+    context = {
+        'profile': request.user.profile,
+        'is_student': hasattr(request.user, 'student'),
+        'is_teacher': hasattr(request.user, 'teacher'),
+    }
+
+    if hasattr(request.user, 'student'):
+        context['student'] = request.user.student
+    elif hasattr(request.user, 'teacher'):
+        context['teacher'] = request.user.teacher
+    template_name = 'accounts/profile.html'
     return render(request, 'accounts/profile.html')

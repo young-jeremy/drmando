@@ -283,13 +283,26 @@ class BulkAttendanceForm(forms.Form):
             )
 
 
+
+
 class AssignmentForm(forms.ModelForm):
     class Meta:
         model = Assignment
-        fields = ['course', 'title', 'description', 'due_date', 'max_score']
+        fields = ['title', 'description', 'subject', 'due_date', 'grade_level',
+                 'priority', 'file_attachment', 'max_score', 'is_active']
         widgets = {
-            'due_date': forms.DateTimeInput(attrs={'type': 'datetime-local'}),
-            'description': forms.Textarea(attrs={'rows': 4}),
+            'title': forms.TextInput(attrs={'class': 'form-control'}),
+            'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 4}),
+            'subject': forms.Select(attrs={'class': 'form-select'}),
+            'due_date': forms.DateTimeInput(attrs={
+                'class': 'form-control',
+                'type': 'datetime-local'
+            }),
+            'grade_level': forms.Select(attrs={'class': 'form-select'}),
+            'priority': forms.Select(attrs={'class': 'form-select'}),
+            'file_attachment': forms.FileInput(attrs={'class': 'form-control'}),
+            'max_score': forms.NumberInput(attrs={'class': 'form-control'}),
+            'is_active': forms.CheckboxInput(attrs={'class': 'form-check-input'})
         }
 
 

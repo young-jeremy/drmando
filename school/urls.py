@@ -1,6 +1,7 @@
 from django.urls import path
 from . import views
 from .views import subject_edit
+from . import assignment_create, assignment_delete, assignment_list,assignment_edit
 
 app_name = 'school'
 
@@ -37,7 +38,6 @@ urlpatterns = [
     path('courses/<int:course_id>/attendance/', views.take_attendance, name='take-attendance'),
 
     # Assignment URLs
-    path('assignments/create/', views.AssignmentCreateView.as_view(), name='assignment-create'),
     path('assignments/<int:pk>/submit/', views.AssignmentSubmissionCreateView.as_view(), name='assignment-submit'),
 
 # Subject URLs (new)
@@ -79,7 +79,23 @@ urlpatterns = [
     path('subjects/<int:pk>/toggle-status/', views.subject_toggle_status, name='subject-toggle-status'),
     path('subjects/<int:pk>/delete-file/<str:file_type>/', views.subject_delete_file, name='subject-delete-file'),
 
+    # Assignment URLs
+    path('assignments/', assignment_list.assignment_list, name='assignment_list'),
+    path('assignments/create/', assignment_create.assignment_create, name='assignment-create'),
+    path('assignments/<int:pk>/', assignment_list.assignment_detail, name='assignment-detail'),
+    path('assignments/<int:pk>/edit/', assignment_edit.assignment_edit, name='assignment-edit'),
+    path('assignments/<int:pk>/delete/', assignment_delete.assignment_delete, name='assignment-delete'),
 
+    # Optional: Assignment file handling
+    path('assignments/<int:pk>/download/', assignment_list.download_assignment_file, name='assignment-download'),
+    path('assignments/<int:pk>/delete-file/', assignment_edit.delete_assignment_file, name='assignment-delete-file'),
 
+    # Optional: Assignment status toggle
+    path('assignments/<int:pk>/toggle-status/', assignment_edit.toggle_assignment_status,
+         name='assignment-toggle-status'),
+
+    path('courses/<int:pk>/enroll/', views.course_enroll, name='course-enroll'),
+    path('courses/<int:pk>/unenroll/', views.course_unenroll, name='course-unenroll'),
+    path('courses/<int:course_pk>/remove-student/<int:student_pk>/', views.course_remove_student, name='course-remove-student'),
 
 ]

@@ -17,10 +17,10 @@
                 {% if user.is_authenticated %}
                     {% if user.user_type == 'student' %}
                         <li class="nav-item">
-                            <a class="nav-link" href="{% url 'school:course-list' %}">My Courses</a>
+                            <a class="nav-link" href="{% url 'school:course_list' %}">My Courses</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="#assignments">Assignments</a>
+                            <a class="nav-link" href="{% url 'school:assignment_list' %}">Assignments</a>
                         </li>
                     {% elif user.user_type == 'teacher' %}
                         <li class="nav-item">
@@ -79,7 +79,7 @@
                             {% if enrolled_courses %}
                                 <div class="list-group">
                                     {% for enrollment in enrolled_courses %}
-                                        <a href="{% url 'school:course-detail' enrollment.course.id %}" 
+                                        <a href="{% url 'school:course_detail' enrollment.course.id %}"
                                            class="list-group-item list-group-item-action">
                                             {{ enrollment.course.name }}
                                             <span class="badge badge-primary float-right">
@@ -136,7 +136,7 @@
                                 <a href="#" class="list-group-item list-group-item-action">
                                     View Attendance
                                 </a>
-                                <a href="#" class="list-group-item list-group-item-action">
+                                <a href="{% url 'school:assignment_list' %}" class="list-group-item list-group-item-action">
                                     Upcoming Assignments
                                 </a>
                             {% elif user.user_type == 'teacher' %}

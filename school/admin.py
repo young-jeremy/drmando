@@ -9,6 +9,55 @@ from django.contrib import admin
 from .models import Course
 from django.contrib import admin
 from .models import Subject
+from django.contrib import admin
+from .models import Assignment
+
+
+@admin.register(Assignment)
+class AssignmentAdmin(admin.ModelAdmin):
+    list_display = ('title', 'course', 'teacher', 'due_date', 'grade_level', 'priority', 'is_active')
+    list_filter = ('is_active', 'priority', 'grade_level', 'course', 'teacher')
+    search_fields = ('title', 'description', 'course__name', 'teacher__user__username')
+    date_hierarchy = 'due_date'
+    ordering = ('-due_date',)
+
+    fieldsets = (
+        ('Basic Information', {
+            'fields': ('title', 'description', 'course', 'teacher')
+        }),
+        ('Assignment Details', {
+            'fields': ('grade_level', 'priority', 'max_score', 'due_date')
+        }),
+        ('File Attachment', {
+            'fields': ('file_attachment',),
+            'classes': ('collapse',)
+        }),
+        ('Status', {
+            'fields': ('is_active',)
+        })
+    )
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        if request.user.is_superuser:
+            return qs
+        if hasattr(request.user, 'teacher'):
+            return qs.filter(teacher=request.user.teacher)
+        return qs.none()
+
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        if db_field.name == "teacher" and not request.user.is_superuser:
+            if hasattr(request.user, 'teacher'):
+                kwargs["queryset"] = Teacher.objects.filter(user=request.user)
+            else:
+                kwargs["queryset"] = Teacher.objects.none()
+        return super().formfield_for_foreignkey(db_field, request, **kwargs)
+
+    def save_model(self, request, obj, form, change):
+        if not obj.teacher and hasattr(request.user, 'teacher'):
+            obj.teacher = request.user.teacher
+        super().save_model(request, obj, form, change)
+
 
 
 @admin.register(Subject)
@@ -147,11 +196,6 @@ class AttendanceAdmin(admin.ModelAdmin):
     list_filter = ('is_present', 'date')
     search_fields = ('student__user__username', 'course__name')
 
-@admin.register(Assignment)
-class AssignmentAdmin(admin.ModelAdmin):
-    list_display = ('course', 'title', 'due_date', 'max_score')
-    list_filter = ('due_date', 'created_at')
-    search_fields = ('title', 'description', 'course__name')
 
 @admin.register(AssignmentSubmission)
 class AssignmentSubmissionAdmin(admin.ModelAdmin):
